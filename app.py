@@ -1721,18 +1721,7 @@ with tab_check:
         st.markdown(f'<div class="ss-home-quick"><div class="ss-home-quick-head"><span class="ss-home-quick-icon">✦</span><h3>{tips_title}</h3></div><ul>{quick_html}</ul></div>', unsafe_allow_html=True)
         st.markdown('<div class="ss-side-note"><span class="ss-side-note-icon">🛡</span><div><b>' + ("Remember" if lang == "en" else "याद रखें") + '</b><p>' + ("Real officials will never demand money to prevent an arrest. Pause, hang up, and verify." if lang == "en" else "असली अधिकारी गिरफ्तारी रोकने के लिए पैसे नहीं मांगते। रुकें, कॉल काटें और खुद पुष्टि करें।") + '</p></div></div>', unsafe_allow_html=True)
 
-    # These sections intentionally span the full page width beneath the checker/tips row.
-    st.markdown(f'<div class="ss ss-label" style="margin-top:22px">{html.escape(t["how_title"]).upper()}</div>', unsafe_allow_html=True)
-    render_how(t)
-    st.markdown(f'<div class="ss" style="margin-top:22px"><h3 class="ss-section-title">{html.escape(t["share_title"])}</h3><p class="ss-sub">{html.escape(t["share_note"])}</p></div>', unsafe_allow_html=True)
-    if lang == "hi":
-        warning_msg = "डिजिटल अरेस्ट स्कैम के 5 संकेत: (1) गिरफ्तारी की धमकी (2) किसी को न बताने का दबाव (3) वीडियो कॉल न काटने को कहना (4) पैसे को ‘सेफ अकाउंट’ में भेजने को कहना (5) OTP या बैंक की जानकारी मांगना। शक हो तो पैसे न भेजें, कॉल काटें और 1930 पर संपर्क करें।"
-    else:
-        warning_msg = "5 signs of a digital arrest scam: (1) Threats of arrest (2) Pressure to keep it secret (3) Demands to stay on a video call (4) Requests to move money to a ‘safe account’ (5) Requests for OTPs or banking details. If in doubt, do not pay, hang up, and contact 1930."
-    st.link_button(t["share_btn"], "https://wa.me/?text=" + urllib.parse.quote(warning_msg), use_container_width=True)
-    with st.expander(t["privacy_short"]):
-        st.markdown(f'**{t["privacy_title"]}**\n\n{t["privacy_body"]}\n\n**{t["limits_title"]}**\n\n{t["limits_body"]}')
-
+    # Feature cards and helpline sit immediately beneath the main checker, matching the selected reference layout.
     feature_labels = [
         ("🧠", "Scam Drill" if lang == "en" else "स्कैम अभ्यास", "Test your knowledge with real-life scam scenarios." if lang == "en" else "असली जैसे उदाहरणों से अपनी जानकारी जाँचें।", "#ff5b83", "rgba(255,77,123,.12)"),
         ("🛡", "Safety Tips" if lang == "en" else "सुरक्षा सुझाव", "Simple tips to keep your personal and financial information safe." if lang == "en" else "अपनी निजी और वित्तीय जानकारी सुरक्षित रखें।", "#36b9ff", "rgba(40,145,255,.13)"),
@@ -1746,6 +1735,19 @@ with tab_check:
     helpline_label = "Cyber Crime Helpline (India)" if lang == "en" else "साइबर क्राइम हेल्पलाइन (भारत)"
     st.markdown(f'<div class="ss-helpline"><div class="ss-helpline-phone">☎</div><div class="ss-helpline-copy"><h3>{helpline_title}</h3><p>{helpline_sub}</p></div><a href="tel:1930" class="ss-helpline-number">☎ &nbsp;1930</a><div class="ss-helpline-label">{helpline_label}</div><div class="ss-helpline-art">✦</div></div>', unsafe_allow_html=True)
 
+
+    # Supporting guidance follows below the primary actions so users can explore it while scrolling.
+    # These sections intentionally span the full page width beneath the checker/tips row.
+    st.markdown(f'<div class="ss ss-label" style="margin-top:22px">{html.escape(t["how_title"]).upper()}</div>', unsafe_allow_html=True)
+    render_how(t)
+    st.markdown(f'<div class="ss" style="margin-top:22px"><h3 class="ss-section-title">{html.escape(t["share_title"])}</h3><p class="ss-sub">{html.escape(t["share_note"])}</p></div>', unsafe_allow_html=True)
+    if lang == "hi":
+        warning_msg = "डिजिटल अरेस्ट स्कैम के 5 संकेत: (1) गिरफ्तारी की धमकी (2) किसी को न बताने का दबाव (3) वीडियो कॉल न काटने को कहना (4) पैसे को ‘सेफ अकाउंट’ में भेजने को कहना (5) OTP या बैंक की जानकारी मांगना। शक हो तो पैसे न भेजें, कॉल काटें और 1930 पर संपर्क करें।"
+    else:
+        warning_msg = "5 signs of a digital arrest scam: (1) Threats of arrest (2) Pressure to keep it secret (3) Demands to stay on a video call (4) Requests to move money to a ‘safe account’ (5) Requests for OTPs or banking details. If in doubt, do not pay, hang up, and contact 1930."
+    st.link_button(t["share_btn"], "https://wa.me/?text=" + urllib.parse.quote(warning_msg), use_container_width=True)
+    with st.expander(t["privacy_short"]):
+        st.markdown(f'**{t["privacy_title"]}**\n\n{t["privacy_body"]}\n\n**{t["limits_title"]}**\n\n{t["limits_body"]}')
 with tab_drill:
     show_scam_drill(lang, t)
 
