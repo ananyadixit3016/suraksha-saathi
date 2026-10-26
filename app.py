@@ -1019,6 +1019,17 @@ button[data-baseweb="tab"][aria-selected="true"]{background:#E4F5F1!important;co
 .st-key-ex_scam button::before{background:#D6404F}.st-key-ex_susp button::before{background:#D69A2D}.st-key-ex_safe button::before{background:#259B69}
 [data-testid="stSpinner"]{color:#50667D!important}
 @media(max-width:640px){.ss-hero{padding:22px 18px!important}.ss-hero h1{font-size:1.85rem!important}.ss-trust{gap:7px}.ss-trust span{font-size:.8rem;padding:7px 10px}}
+/* Final light-theme overrides for native Streamlit elements */
+.stApp,.stApp [data-testid="stMarkdownContainer"],.stApp [data-testid="stMarkdownContainer"] p,.stApp [data-testid="stMarkdownContainer"] li,.stApp [data-testid="stWidgetLabel"],.stApp [data-testid="stWidgetLabel"] p,.stApp [data-testid="stCaptionContainer"],.stApp [data-testid="stTabs"] button{color:#173A5C!important}
+.stApp h1,.stApp h2,.stApp h3,.stApp h4,.stApp [data-testid="stMarkdownContainer"] h1,.stApp [data-testid="stMarkdownContainer"] h2,.stApp [data-testid="stMarkdownContainer"] h3{color:#102A4C!important}
+.stApp [data-testid="stTextArea"] textarea,.stApp textarea{background:#FBFDFF!important;color:#173A5C!important;-webkit-text-fill-color:#173A5C!important;caret-color:#0F8A83!important}
+.stApp [data-testid="stTextArea"] textarea::placeholder,.stApp textarea::placeholder{color:#8092A4!important;-webkit-text-fill-color:#8092A4!important;opacity:1!important}
+.stApp [data-testid="stTextArea"] [data-baseweb="textarea"],.stApp [data-testid="stTextArea"] [data-baseweb="base-input"]{background:#FBFDFF!important;border:1px solid #C9D9E5!important}
+.stApp [data-testid="stRadio"] label,.stApp [data-testid="stSelectbox"] label{color:#294B65!important}
+.stApp [data-baseweb="select"]>div{background:#FFFFFF!important;color:#173A5C!important;border-color:#C9D9E5!important}
+.stApp [data-baseweb="select"] span,.stApp [data-baseweb="select"] input{color:#173A5C!important;-webkit-text-fill-color:#173A5C!important}
+.stApp [data-baseweb="tab-list"] button{color:#50667D!important}
+.stApp [data-baseweb="tab-list"] button[aria-selected="true"]{color:#08786F!important}
 </style>
 """
 
@@ -1552,7 +1563,7 @@ tab_check, tab_learn, tab_test, tab_drill = st.tabs([t["tab_check"], t["tab_lear
 with tab_check:
     with card_container("input_card"):
         st.markdown(
-            f'<div class="ss"><h3 style="margin:0 0 4px;padding:0;font-size:1.15rem;font-weight:700;color:#F1F5F9">'
+            f'<div class="ss"><h3 style="margin:0 0 4px;padding:0;font-size:1.15rem;font-weight:700;color:#102A4C!important">'
             f'{html.escape(t["card_title"])}</h3><p class="ss-sub" style="margin-bottom:14px">{html.escape(t["card_hint"])}</p></div>',
             unsafe_allow_html=True,
         )
