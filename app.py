@@ -1580,26 +1580,85 @@ def show_self_test(lang: str):
 # 6. MAIN APP
 # ----------------------------------------------------------------------------
 st.set_page_config(page_title="Suraksha Saathi", page_icon="🛡️", layout="wide")
- 
-# Language comes from the selector's saved state (Hindi first, as before)
-lang = "hi" if st.session_state.get("lang_choice", "हिन्दी") == "हिन्दी" else "en"
+
+# Accessible, working header controls. Keep choices across Streamlit reruns.
+if "lang_choice" not in st.session_state:
+    st.session_state.lang_choice = "हिन्दी"
+if "size_step" not in st.session_state:
+    st.session_state.size_step = 1
+if "light_theme" not in st.session_state:
+    st.session_state.light_theme = False
+
+def _set_lang(value):
+    st.session_state.lang_choice = value
+
+def _set_size(value):
+    st.session_state.size_step = value
+
+def _toggle_theme():
+    st.session_state.light_theme = not st.session_state.light_theme
+
+lang = "hi" if st.session_state.lang_choice == "हिन्दी" else "en"
 t = T[lang]
- 
 st.markdown(THEME_CSS + (HINDI_CSS if lang == "hi" else ""), unsafe_allow_html=True)
- 
-head_left, head_right = st.columns([2, 2])
-with head_left:
+
+# One aligned header: branding left, language / accessibility controls right.
+head_brand, head_controls = st.columns([1.05, 1.65], gap="small", vertical_alignment="center")
+with head_brand:
     render_topbar(t)
-with head_right:
-    language_col, size_col = st.columns([1, 1])
-    with language_col:
-        st.radio("Language / भाषा", ["हिन्दी", "English"], horizontal=True, key="lang_choice", label_visibility="collapsed")
-    with size_col:
-        size_labels = dict(zip(["normal", "large", "xlarge"], t["size_options"]))
-        st.selectbox(t["text_size"], ["normal", "large", "xlarge"], format_func=lambda option: size_labels[option], key="text_size_choice", label_visibility="collapsed")
-size_choice = st.session_state.get("text_size_choice", "normal")
-size_scale = {"normal": 1.0, "large": 1.15, "xlarge": 1.30}.get(size_choice, 1.0)
-st.markdown(f"<style>:root{{--ss-text-scale:{size_scale}}} html{{font-size:calc(16px * var(--ss-text-scale, 1))!important}} .stApp p,.stApp label,.stApp li,.stApp button,.stApp textarea,.stApp input,.stApp a,.stApp summary,.stApp h1,.stApp h2,.stApp h3{{font-size:calc(1em * var(--ss-text-scale, 1))!important}} .stButton>button,[data-testid='stDownloadButton'] button{{min-height:44px!important}} button:focus-visible,input:focus-visible,textarea:focus-visible,a:focus-visible{{outline:3px solid #5EEAD4!important;outline-offset:3px!important}} @media(max-width:640px){{[data-testid='stMainBlockContainer'],.block-container{{padding:.8rem .75rem 2rem!important}}}}</style>", unsafe_allow_html=True)
+with head_controls:
+    lang_col, minus_col, normal_col, plus_col, theme_col = st.columns([1.7, .48, .48, .48, .55], gap="small", vertical_alignment="center")
+    with lang_col:
+        lc1, lc2 = st.columns([1, 1], gap="small")
+        with lc1:
+            st.button("हिन्दी", key="header_hindi", type="primary" if lang == "hi" else "secondary", use_container_width=True, on_click=_set_lang, args=("हिन्दी",))
+        with lc2:
+            st.button("English", key="header_english", type="primary" if lang == "en" else "secondary", use_container_width=True, on_click=_set_lang, args=("English",))
+    with minus_col:
+        st.button("A−", key="font_smaller", help="Decrease text size", use_container_width=True, disabled=st.session_state.size_step <= 0, on_click=_set_size, args=(max(0, st.session_state.size_step - 1),))
+    with normal_col:
+        st.button("A", key="font_normal", help="Default text size", use_container_width=True, on_click=_set_size, args=(1,))
+    with plus_col:
+        st.button("A+", key="font_larger", help="Increase text size", use_container_width=True, disabled=st.session_state.size_step >= 2, on_click=_set_size, args=(min(2, st.session_state.size_step + 1),))
+    with theme_col:
+        st.button("☀" if st.session_state.light_theme else "☾", key="theme_toggle", help="Toggle light/dark theme", use_container_width=True, on_click=_toggle_theme)
+
+size_scale = {0: 0.92, 1: 1.0, 2: 1.15}.get(st.session_state.size_step, 1.0)
+refinement_css = """<style>
+:root{--ss-text-scale:__SCALE__}
+html{font-size:calc(16px * var(--ss-text-scale))!important}
+.stApp p,.stApp label,.stApp li,.stApp button,.stApp textarea,.stApp input,.stApp a,.stApp summary,.stApp h1,.stApp h2,.stApp h3{font-size:calc(1em * var(--ss-text-scale))!important}
+.stButton>button,[data-testid='stDownloadButton'] button{min-height:42px!important}
+button:focus-visible,input:focus-visible,textarea:focus-visible,a:focus-visible{outline:3px solid #5EEAD4!important;outline-offset:3px!important}
+[data-testid="stMainBlockContainer"],.stMainBlockContainer,.block-container{max-width:1480px!important;padding:0 clamp(1rem,3.8vw,3.5rem) 3rem!important}
+.ss-topbar{margin-top:8px!important;min-height:66px!important;padding:7px 0 10px!important;border-bottom:0!important}
+.ss-brand-name{font-size:1.42rem!important;line-height:1.1!important}.ss-brand-sub{font-size:.88rem!important}
+[data-testid="stHorizontalBlock"]{align-items:center!important}
+.stApp [data-testid="stButton"] button{border-radius:999px!important;font-weight:650!important;white-space:nowrap!important;transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease!important}
+.stApp [data-testid="stButton"] button:hover{transform:translateY(-1px);box-shadow:0 5px 18px rgba(30,220,220,.12)!important}
+.stApp [data-testid="stButton"] button[kind="primary"]{background:linear-gradient(110deg,#43f1d3,#36bdf7)!important;color:#062438!important;border-color:#48e9e2!important}
+.stApp [data-testid="stButton"] button[kind="secondary"]{background:rgba(9,31,52,.86)!important;color:#e8f6ff!important;border:1px solid #255570!important}
+[data-baseweb="tab-list"]{display:flex!important;gap:8px!important;background:transparent!important;border:0!important;border-bottom:1px solid rgba(91,152,187,.25)!important;border-radius:0!important;box-shadow:none!important;padding:0 0 7px!important;margin:16px 0 18px!important}
+button[data-baseweb="tab"]{border-radius:0!important;padding:10px 13px!important;border-bottom:3px solid transparent!important;color:#d5e8f6!important}
+button[data-baseweb="tab"][aria-selected="true"]{background:transparent!important;color:#42f5d4!important;border-bottom-color:#42f5d4!important;box-shadow:none!important}
+.ss-hero-showcase{min-height:405px!important;margin:14px 0 20px!important;padding:28px 18px 26px 30px!important;border-radius:24px!important}
+.ss-hero-copy{width:47%!important;max-width:590px!important}.ss-hero-art{width:72%!important}
+.ss-hero-art img{object-position:center 43%!important;mask-image:linear-gradient(90deg,transparent 0%,rgba(0,0,0,.24) 10%,#000 27%)!important;-webkit-mask-image:linear-gradient(90deg,transparent 0%,rgba(0,0,0,.24) 10%,#000 27%)!important}
+.ss-hero h1{font-family:Georgia,'Times New Roman',serif!important;font-size:clamp(2.8rem,5vw,4.35rem)!important;line-height:.99!important;letter-spacing:-.035em!important;margin:16px 0!important}
+.ss-hero p{font-size:1.08rem!important;line-height:1.52!important;max-width:490px!important}.ss-trust{gap:10px!important;margin-top:20px!important}.ss-trust span{padding:10px 14px!important;font-size:.92rem!important}
+.ss-home-quick{height:100%!important;min-height:260px!important;padding:21px 20px!important}.ss-home-quick ul{grid-template-columns:1fr!important;gap:13px!important}
+.ss-feature-grid{gap:16px!important;margin:16px 0!important}.ss-feature{min-height:180px!important;padding:18px!important}.ss-helpline{min-height:96px!important}
+@media(max-width:1100px){.ss-hero-showcase{min-height:430px!important}.ss-hero-copy{width:58%!important}.ss-hero-art{width:75%!important;opacity:.86}}
+@media(max-width:820px){[data-testid="stMainBlockContainer"],.block-container{padding:0 1rem 2rem!important}.ss-hero-showcase{min-height:560px!important;align-items:flex-start!important;padding:24px 20px 240px!important}.ss-hero-copy{width:100%!important;max-width:590px!important}.ss-hero-art{width:100%!important;height:270px!important;top:auto!important;bottom:0!important;opacity:.92!important}.ss-hero-art img{object-fit:contain!important;object-position:center bottom!important;mask-image:linear-gradient(180deg,transparent 0%,#000 24%)!important;-webkit-mask-image:linear-gradient(180deg,transparent 0%,#000 24%)!important}.ss-hero h1{font-size:clamp(2.4rem,8vw,3.5rem)!important}.ss-feature-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+@media(max-width:560px){.ss-hero-showcase{min-height:590px!important}.ss-feature-grid{grid-template-columns:1fr 1fr!important}.ss-feature{padding:12px!important}.ss-helpline{align-items:flex-start!important}.ss-helpline-number{padding:9px 16px!important}}
+</style>""".replace("__SCALE__", str(size_scale))
+if st.session_state.light_theme:
+    refinement_css += """<style>
+.stApp{background:linear-gradient(180deg,#eff8ff,#e4f2fb 55%,#f7fbff)!important;color:#102d48!important}
+.ss-hero-showcase{background:linear-gradient(105deg,rgba(235,249,255,.97),rgba(225,244,250,.90),rgba(226,244,250,.35))!important}
+.ss-hero h1{color:#102d48!important;text-shadow:none!important}.ss-hero p{color:#254c69!important}
+</style>"""
+st.markdown(refinement_css, unsafe_allow_html=True)
 render_hero(t)
  
 if "text" not in st.session_state:
@@ -1607,7 +1666,8 @@ if "text" not in st.session_state:
 if "checked" not in st.session_state:
     st.session_state.checked = None
  
-tab_check, tab_learn, tab_test, tab_drill = st.tabs([t["tab_check"], t["tab_learn"], t["tab_test"], t["tab_drill"]])
+nav_labels = (["⌂  Home", "☷  Steps", "⬟  Self-Test", "▧  Scam Types"] if lang == "en" else ["⌂  होम", "☷  सुरक्षा के कदम", "⬟  सेल्फ-टेस्ट", "▧  स्कैम प्रकार"])
+tab_check, tab_learn, tab_test, tab_drill = st.tabs(nav_labels)
  
 with tab_check:
     check_col, tips_col = st.columns([2.15, 1], gap="medium")
