@@ -623,7 +623,7 @@ def build_report(text: str, analysis: dict) -> str:
  
 # ---- UI strings for the redesigned interface (added on top of the originals) ----
 T["en"].update({
-    "brand_sub": "Digital arrest scam shield",
+    "brand_sub": "Safer Seniors, Stronger India",
     "eyebrow": "Built for seniors and their families",
     "hero_h1": "Not sure about a call or message? Check before you act.",
     "hero_sub": "Paste what you received and get a calm second opinion in seconds, with clear next steps and a quick way to alert your family.",
@@ -671,7 +671,7 @@ T["en"].update({
     "footer": "Prototype built for the Hack India AI & Cybersecurity Hackathon. Not a substitute for official advice. Cybercrime helpline: 1930.",
 })
 T["hi"].update({
-    "brand_sub": "डिजिटल अरेस्ट स्कैम से सुरक्षा",
+    "brand_sub": "बुज़ुर्ग सुरक्षित, परिवार निश्चिंत",
     "eyebrow": "बुज़ुर्गों और उनके परिवारों के लिए",
     "hero_h1": "कॉल या मैसेज पर शक है? कुछ करने से पहले जांचें।",
     "hero_sub": "जो मिला है उसे यहाँ डालें। कुछ ही सेकंड में शांत सलाह, साफ़ अगले कदम और परिवार को बताने का आसान तरीका पाएं।",
@@ -894,9 +894,6 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,a:focus-visible,
  
 /* ---------- Streamlit widgets (scoped to what this app uses) ---------- */
 [data-testid="stRadio"]{display:flex;justify-content:flex-end}
-[data-testid="stSelectbox"] label{color:var(--ss-text-2)!important;font-weight:600!important}
-[data-testid="stSelectbox"] [data-baseweb="select"]>div{min-height:44px!important;background:var(--ss-card)!important;border:1px solid var(--ss-line)!important;color:var(--ss-text)!important}
-[data-testid="stSelectbox"] [data-baseweb="select"] *{color:var(--ss-text)!important}
 [data-testid="stRadio"] [role="radiogroup"]{background:var(--ss-card);border:1px solid var(--ss-line);border-radius:12px;padding:4px;gap:4px!important;display:inline-flex!important;flex-direction:row!important;width:fit-content}
 [data-testid="stRadio"] label[data-baseweb="radio"]{margin:0!important;padding:6px 15px!important;border-radius:9px;cursor:pointer;color:var(--ss-text-2);transition:background .15s,color .15s}
 [data-testid="stRadio"] label[data-baseweb="radio"] > div:first-of-type:not(:has(p)){display:none!important}
@@ -947,9 +944,85 @@ button[data-baseweb="tab"]:focus-visible{outline:2px solid var(--ss-teal)!import
   [data-baseweb="tab-list"]{width:100%}
   .stApp [data-testid="stDownloadButton"] button,.stApp [data-testid="stLinkButton"] a,.stApp a[data-testid="stBaseLinkButton-secondary"]{width:100%}
 }
+
+/* ---------- Suraksha Saathi light, welcoming product refresh ---------- */
+:root{
+  --ss-bg:#F7F9FC; --ss-bg-soft:#F1F6FA; --ss-card:#FFFFFF; --ss-elev:#F4F8FC;
+  --ss-line:#DCE6EF; --ss-line-2:#B9CCD9;
+  --ss-teal:#0F8A83; --ss-teal-hi:#0B766F; --ss-teal-ink:#FFFFFF;
+  --ss-text:#102A4C; --ss-text-2:#425A73; --ss-muted:#61768A;
+  --ss-red:#C93645; --ss-amber:#A86608; --ss-green:#17805D;
+}
+.stApp{background:linear-gradient(180deg,#F7FAFC 0%,#F9F7F1 52%,#F4F8FC 100%)!important;color:var(--ss-text)!important}
+[data-testid="stHeader"]{background:rgba(247,250,252,.92)!important}
+[data-testid="stMainBlockContainer"],.stMainBlockContainer,.block-container{max-width:1180px!important;padding:1rem 1.35rem 3rem!important}
+.ss-brand-name{color:#12345B!important;font-size:1.34rem!important}
+.ss-brand-sub{color:#5C7085!important}
+.ss-logo{background:linear-gradient(145deg,#B8F0E4,#63CDBD)!important;box-shadow:0 7px 20px rgba(15,138,131,.16)!important;border:1px solid #8DDDD0}
+.ss-hero{margin-top:12px;padding:30px 28px 26px!important;border:1px solid #DDEBEF;border-radius:24px;background:radial-gradient(ellipse at 88% 15%,rgba(185,233,225,.58),transparent 36%),linear-gradient(120deg,#FFFFFF 0%,#F4FAF8 58%,#FDF4E9 100%);box-shadow:0 12px 34px rgba(22,54,82,.07);overflow:hidden}
+.ss-hero::after{right:18px!important;top:18px!important;width:150px!important;height:180px!important;opacity:.65}
+.ss-eyebrow{background:#E6F7F3!important;border-color:#C4E9E2!important;color:#08786F!important}
+.ss-hero h1{color:#102A4C!important;max-width:820px!important;font-size:clamp(1.9rem,4vw,3rem)!important}
+.ss-hero p{color:#425A73!important;max-width:760px!important}
+.ss-trust span{background:rgba(255,255,255,.82)!important;border-color:#DDE8ED!important;color:#294B65!important;border-radius:999px!important;box-shadow:0 2px 7px rgba(16,42,76,.035)}
+.ss-card{background:#FFFFFF!important;border-color:#DCE6EF!important;box-shadow:0 7px 22px rgba(24,55,82,.06)!important;color:#102A4C!important}
+.ss-card h3,.ss-act h3,.ss-section-title{color:#102A4C!important}
+.ss-h-ico{background:#E5F5F2!important;color:#0F827B!important}
+.ss-sub{color:#50667D!important}
+.ss-muted{color:#65798D!important}
+.ss-chip{background:#E6F7F3!important;color:#08786F!important;border-color:#C5E8E2!important}
+.ss-chip-muted{background:#F1F5F9!important;color:#50667D!important;border-color:#DCE6EF!important}
+.ss-status{box-shadow:0 8px 24px rgba(24,55,82,.07)!important}
+.ss-v-SCAM .ss-status-title,.ss-v-SCAM .ss-chip{color:#B42332!important}
+.ss-v-CAREFUL .ss-status-title,.ss-v-CAREFUL .ss-chip{color:#8B5608!important}
+.ss-v-SAFE .ss-status-title,.ss-v-SAFE .ss-chip{color:#137553!important}
+.ss-signs li,.ss-steps li,.ss-details li{background:#F3F7FA!important;color:#263F58!important;border:1px solid #E2EAF0}
+.ss-msg{background:#F5F8FB!important;border-color:#DCE6EF!important;color:#1E3854!important}
+.ss-msg mark{background:#FFF0B8!important;color:#6F4B00!important;border-bottom-color:#D6A32D!important}
+.ss-phr{background:#FFF6D9!important;border-color:#F0D78E!important;color:#765000!important}
+.ss-note-info{background:#EAF7F6!important;border-color:#C6E8E4!important;color:#205B59!important}
+.ss-note-warn{background:#FFF6DF!important;border-color:#F0D89D!important;color:#765000!important}
+.ss-how-item{background:#FFFFFF!important;border-color:#DCE6EF!important;box-shadow:0 5px 18px rgba(24,55,82,.04)}
+.ss-how-n{background:#E6F7F3!important;border-color:#C5E8E2!important;color:#08786F!important}
+.ss-how-t,.ss-learn-t{color:#173A5C!important}
+.ss-how-d{color:#526A80!important}
+.ss-learn-n{background:#EAF4FC!important;border-color:#D4E7F4!important;color:#176C9B!important}
+.ss-help{background:#EAF8F4!important;border-color:#C8E9DF!important}
+.ss-help strong,.ss-steps strong,.ss-callout strong{color:#08786F!important}
+.ss-callout{background:#EAF8F4!important;border-color:#C8E9DF!important;color:#244B5A!important}
+.ss-big{color:#102A4C!important}
+.ss-bar{background:#E1EAF1!important}
+.ss-details summary{color:#50667D!important}
+.ss-details summary:hover{color:#08786F!important}
+.ss-details li b{color:#102A4C!important}
+.ss-foot{border-top-color:#DCE6EF!important;color:#64798D!important}
+[data-testid="stRadio"] [role="radiogroup"]{background:#FFFFFF!important;border-color:#DCE6EF!important;box-shadow:0 3px 12px rgba(16,42,76,.04)}
+[data-testid="stRadio"] label[data-baseweb="radio"]{color:#50667D!important}
+[data-testid="stRadio"] label[data-baseweb="radio"]:hover{background:#F0F7F7!important;color:#102A4C!important}
+[data-testid="stRadio"] label[data-baseweb="radio"]:has(input:checked){background:#0F817A!important;color:#FFFFFF!important}
+[data-baseweb="tab-list"]{background:#FFFFFF!important;border-color:#DCE6EF!important;box-shadow:0 4px 14px rgba(16,42,76,.04)}
+button[data-baseweb="tab"]{color:#50667D!important}
+button[data-baseweb="tab"]:hover{color:#102A4C!important;background:#F1F7F8!important}
+button[data-baseweb="tab"][aria-selected="true"]{background:#E4F5F1!important;color:#08786F!important;box-shadow:inset 0 0 0 1px #C7E9E2!important}
+.st-key-input_card,.st-key-family_card,.st-key-report_card{background:#FFFFFF!important;border-color:#DCE6EF!important;box-shadow:0 8px 26px rgba(24,55,82,.07)!important}
+[data-testid="stTextArea"] [data-baseweb="textarea"],[data-testid="stTextArea"] [data-baseweb="base-input"]{background:#FBFDFF!important;border-color:#C9D9E5!important}
+[data-testid="stTextArea"] [data-baseweb="textarea"]:focus-within,[data-testid="stTextArea"] [data-baseweb="base-input"]:focus-within{border-color:#0F8A83!important;box-shadow:0 0 0 3px rgba(15,138,131,.15)!important}
+[data-testid="stTextArea"] textarea{color:#173A5C!important;caret-color:#0F8A83!important}
+[data-testid="stTextArea"] textarea::placeholder{color:#8092A4!important}
+.stApp [data-testid="stBaseButton-secondary"],.stApp button[kind="secondary"],.stApp [data-testid="stDownloadButton"] button,.stApp a[data-testid="stBaseLinkButton-secondary"],.stApp [data-testid="stLinkButton"] a{background:#FFFFFF!important;color:#1D4564!important;border-color:#C9D9E5!important;box-shadow:0 3px 10px rgba(16,42,76,.04)!important}
+.stApp [data-testid="stBaseButton-secondary"]:hover,.stApp button[kind="secondary"]:hover,.stApp [data-testid="stDownloadButton"] button:hover,.stApp a[data-testid="stBaseLinkButton-secondary"]:hover,.stApp [data-testid="stLinkButton"] a:hover{border-color:#0F8A83!important;background:#EDF8F6!important;color:#0B5F5A!important}
+.stApp [data-testid="stBaseButton-primary"],.stApp button[kind="primary"]{background:linear-gradient(135deg,#116F7D,#0C5B75)!important;color:#FFFFFF!important;border-color:#116F7D!important;box-shadow:0 7px 18px rgba(17,111,125,.20)!important}
+.stApp [data-testid="stBaseButton-primary"]:hover,.stApp button[kind="primary"]:hover{background:#0B5F70!important;color:#FFFFFF!important}
+.st-key-ex_scam button{background:#FFF0F0!important;color:#A62936!important;border-color:#F3D0D3!important}
+.st-key-ex_susp button{background:#FFF6E4!important;color:#80520A!important;border-color:#F1DDAF!important}
+.st-key-ex_safe button{background:#EAF8F0!important;color:#176D4C!important;border-color:#C8E9D5!important}
+.st-key-ex_scam button::before{background:#D6404F}.st-key-ex_susp button::before{background:#D69A2D}.st-key-ex_safe button::before{background:#259B69}
+[data-testid="stSpinner"]{color:#50667D!important}
+@media(max-width:640px){.ss-hero{padding:22px 18px!important}.ss-hero h1{font-size:1.85rem!important}.ss-trust{gap:7px}.ss-trust span{font-size:.8rem;padding:7px 10px}}
 </style>
 """
- 
+
+HINDI_CSS
 HINDI_CSS = """
 <style>
 .stApp p,.ss,.ss p,.ss li,.ss div,.stApp textarea{line-height:1.75}
@@ -1449,24 +1522,22 @@ def show_self_test(lang: str):
 # ----------------------------------------------------------------------------
 st.set_page_config(page_title="Suraksha Saathi", page_icon="🛡️", layout="wide")
  
-# Use visible select boxes for reliable desktop and mobile interaction.
-lang_choice = st.selectbox(
-    "Language / भाषा", ["हिन्दी", "English"], key="lang_choice", label_visibility="visible"
-)
-lang = "hi" if lang_choice == "हिन्दी" else "en"
+# Language comes from the selector's saved state (Hindi first, as before)
+lang = "hi" if st.session_state.get("lang_choice", "हिन्दी") == "हिन्दी" else "en"
 t = T[lang]
-
+ 
 st.markdown(THEME_CSS + (HINDI_CSS if lang == "hi" else ""), unsafe_allow_html=True)
-
+ 
 head_left, head_right = st.columns([2, 2])
 with head_left:
     render_topbar(t)
 with head_right:
-    size_labels = dict(zip(["normal", "large", "xlarge"], t["size_options"]))
-    st.selectbox(
-        t["text_size"], ["normal", "large", "xlarge"],
-        format_func=lambda option: size_labels[option], key="text_size_choice", label_visibility="visible"
-    )
+    language_col, size_col = st.columns([1, 1])
+    with language_col:
+        st.radio("Language / भाषा", ["हिन्दी", "English"], horizontal=True, key="lang_choice", label_visibility="collapsed")
+    with size_col:
+        size_labels = dict(zip(["normal", "large", "xlarge"], t["size_options"]))
+        st.selectbox(t["text_size"], ["normal", "large", "xlarge"], format_func=lambda option: size_labels[option], key="text_size_choice", label_visibility="collapsed")
 size_choice = st.session_state.get("text_size_choice", "normal")
 size_scale = {"normal": 1.0, "large": 1.15, "xlarge": 1.30}.get(size_choice, 1.0)
 st.markdown(f"<style>:root{{--ss-text-scale:{size_scale}}} html{{font-size:calc(16px * var(--ss-text-scale, 1))!important}} .stApp p,.stApp label,.stApp li,.stApp button,.stApp textarea,.stApp input,.stApp a,.stApp summary,.stApp h1,.stApp h2,.stApp h3{{font-size:calc(1em * var(--ss-text-scale, 1))!important}} .stButton>button,[data-testid='stDownloadButton'] button{{min-height:44px!important}} button:focus-visible,input:focus-visible,textarea:focus-visible,a:focus-visible{{outline:3px solid #5EEAD4!important;outline-offset:3px!important}} @media(max-width:640px){{[data-testid='stMainBlockContainer'],.block-container{{padding:.8rem .75rem 2rem!important}}}}</style>", unsafe_allow_html=True)
