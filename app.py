@@ -85,7 +85,7 @@ RULES = {
         "hi": "पैसे ट्रांसफर करने / 'सेफ अकाउंट' में डालने को कहना",
         "keywords": [
             "safe account", "rbi account", "verification fund", "send money", "paise transfer",
-            "paise bhejo", "jurmana", "सेफ अकाउंट", "पैसे ट्रांसफर", "पैसे भेजें", "जुर्माना",
+            "paise bhejo", "jurmana", "सेफ अकाउंट", "पैसे भेजें", "पैसे भेजिए", "पैसे ट्रांसफर", "रुपये जमा", "रुपए जमा", "पैसे जमा", "पैसे ट्रांसफर", "पैसे भेजें", "जुर्माना",
             "वेरिफिकेशन के लिए पैसे", "आरबीआई अकाउंट",
         ],
         "patterns": [
@@ -177,8 +177,8 @@ RULES = {
         ],
         "patterns": [
             r"earn\s+(rs\.?|₹)?\s*\d",
-            r"(update|complete|verify)\s+(your\s+)?kyc\b",
-            r"kyc\s+(is\s+)?(expired?|pending|incomplete|update|verification)\b(?!\s+(ho\s+gaya|ho\s+gayi|hogaya|done|completed|ho\s+chuka))",
+            # KYC wording alone is not treated as scam bait. A suspicious link,
+            # threat, money demand or other pattern can still raise the score.
         ],
     },
     "phishing_link": {
@@ -296,7 +296,7 @@ def llm_analyze(text: str, lang: str):
     try:
         import anthropic
  
-        client = anthropic.Anthropic(api_key=key)
+        client = anthropic.Anthropic(api_key=key, timeout=8.0, max_retries=0)
         language = "simple Hindi (Devanagari)" if lang == "hi" else "simple English"
         prompt = f"""You are a scam-detection assistant protecting elderly people in India
 from "digital arrest" fraud (fake CBI/police/customs officers on calls or video calls who
@@ -325,7 +325,9 @@ MESSAGE:
         data = json.loads(match.group(0))
         if data.get("verdict") not in SEVERITY:
             return None
-        data["score"] = int(data.get("score", 0))
+        data["score"] = max(0, min(100, int(data.get("score", 0))))
+        data["reasons"] = [str(x)[:180] for x in data.get("reasons", [])[:4] if isinstance(x, (str, int, float))]
+        data["one_line"] = str(data.get("one_line", ""))[:240]
         return data
     except Exception:
         return None
@@ -563,17 +565,25 @@ def combine(rule_result: dict, llm_result):
  
  
 def get_analysis(text: str, lang: str) -> dict:
-    """Analyse once per (text, language) and remember it, so reruns are instant."""
+    """Analyse once per (text, language), with bounded optional AI use."""
     cache = st.session_state.setdefault("analysis_cache", {})
     key = (text, lang)
     if key not in cache:
         rule_result = rule_analyze(text)
-        llm_result = llm_analyze(text, lang)
+        today = datetime.now().date().isoformat()
+        if st.session_state.get("ai_limit_date") != today:
+            st.session_state["ai_limit_date"] = today
+            st.session_state["ai_calls_today"] = 0
+        calls = int(st.session_state.get("ai_calls_today", 0))
+        llm_result = None
+        if calls < 10 and get_api_key():
+            st.session_state["ai_calls_today"] = calls + 1
+            llm_result = llm_analyze(text, lang)
         verdict, score = combine(rule_result, llm_result)
         cache[key] = {"rule": rule_result, "llm": llm_result, "verdict": verdict, "score": score}
     return cache[key]
- 
- 
+
+
 def build_report(text: str, analysis: dict) -> str:
     """Plain-text evidence summary (always in English so officials can read it)."""
     ist = timezone(timedelta(hours=5, minutes=30))
@@ -712,6 +722,54 @@ T["en"].update({"tab_check": "Check", "tab_learn": "5 signs", "tab_test": "Self-
 T["hi"].update({"tab_check": "जांचें", "tab_learn": "5 पहचान", "tab_test": "सेल्फ-टेस्ट"})
 T["en"]["empty"] = "Please paste or type a message first."
 T["hi"]["empty"] = "कृपया पहले कोई मैसेज पेस्ट करें या लिखें।"
+
+T["en"].update({
+"tab_drill":"🎭 Scam Drill","text_size":"Text size","size_options":["Normal","Large","Extra large"],
+"privacy_title":"How we protect your privacy","privacy_body":"Messages are used during your active session and are not saved to a database by this prototype. If optional AI analysis is enabled, message text is sent to Anthropic (Claude). Avoid entering passwords, OTPs or unnecessary personal details.",
+"limits_title":"Limits of this tool","limits_body":"This prototype checks known patterns and may miss scams or flag genuine messages. A risk score is not the probability that a message is fraudulent. When in doubt, hang up and call 1930.",
+"share_title":"Share this warning","share_btn":"Share warning on WhatsApp","share_note":"A ready-made warning opens in WhatsApp. Choose your family group before sending.",
+"drill_title":"Practice: spot the scam","drill_intro":"Practice what to do during a suspicious call. Works without an API key.",
+"scenario_label":"Choose a practice scenario","scenario_options":["Fake CBI officer","Fake parcel / SIM-block call"],
+"step_label":"Practice step","choice_label":"What would you do?","next_step":"Next step","restart_drill":"Start again",
+"drill_done":"Practice complete","drill_score":"Safe choices",
+"drill_summary":"Golden rule: hang up, tell someone you trust, and call 1930 if money or financial details are at risk.",
+"privacy_short":"Privacy and limitations"})
+T["hi"].update({
+"tab_drill":"🎭 स्कैम अभ्यास","text_size":"अक्षरों का आकार","size_options":["सामान्य","बड़ा","बहुत बड़ा"],
+"privacy_title":"हम आपकी निजता कैसे सुरक्षित रखते हैं","privacy_body":"इस प्रोटोटाइप में मैसेज खुले सेशन के दौरान इस्तेमाल होता है और डेटाबेस में सेव नहीं किया जाता। अगर AI जांच चालू है, तो मैसेज का टेक्स्ट Anthropic (Claude) को भेजा जाता है। पासवर्ड, OTP या गैर-ज़रूरी निजी जानकारी न डालें।",
+"limits_title":"इस टूल की सीमाएँ","limits_body":"यह प्रोटोटाइप जाने-पहचाने पैटर्न देखता है। कोई स्कैम छूट सकता है या सही मैसेज पर चेतावनी आ सकती है। स्कोर का मतलब स्कैम होने की संभावना नहीं है। शक हो तो कॉल काटें और 1930 पर कॉल करें।",
+"share_title":"यह चेतावनी दूसरों को भेजें","share_btn":"व्हाट्सऐप पर चेतावनी भेजें","share_note":"व्हाट्सऐप में तैयार संदेश खुलेगा। भेजने से पहले परिवार का सही ग्रुप चुनें।",
+"drill_title":"अभ्यास करें: स्कैम पहचानें","drill_intro":"संदिग्ध कॉल आने पर क्या करना है, इसका अभ्यास करें। AI key की ज़रूरत नहीं है।",
+"scenario_label":"अभ्यास चुनें","scenario_options":["नकली CBI अधिकारी","नकली पार्सल / SIM बंद होने की कॉल"],
+"step_label":"अभ्यास का चरण","choice_label":"आप क्या करेंगे?","next_step":"अगला चरण","restart_drill":"फिर से अभ्यास करें",
+"drill_done":"अभ्यास पूरा हुआ","drill_score":"सुरक्षित फैसले",
+"drill_summary":"याद रखें: कॉल काटें, भरोसेमंद व्यक्ति को बताएं, और पैसे या बैंक की जानकारी का खतरा हो तो 1930 पर कॉल करें।",
+"privacy_short":"निजता और सीमाएँ"})
+
+
+T["en"].update({
+"tab_drill":"🎭 Scam Drill","text_size":"Text size","size_options":["Normal","Large","Extra large"],
+"privacy_title":"How we protect your privacy","privacy_body":"Messages are used during your active session and are not saved to a database by this prototype. If optional AI analysis is enabled, message text is sent to Anthropic (Claude). Avoid entering passwords, OTPs or unnecessary personal details.",
+"limits_title":"Limits of this tool","limits_body":"This prototype checks known patterns and may miss scams or flag genuine messages. A risk score is not the probability that a message is fraudulent. When in doubt, hang up and call 1930.",
+"share_title":"Share this warning","share_btn":"Share warning on WhatsApp","share_note":"A ready-made warning opens in WhatsApp. Choose your family group before sending.",
+"drill_title":"Practice: spot the scam","drill_intro":"Practice what to do during a suspicious call. Works without an API key.",
+"scenario_label":"Choose a practice scenario","scenario_options":["Fake CBI officer","Fake parcel / SIM-block call"],
+"step_label":"Practice step","choice_label":"What would you do?","next_step":"Next step","restart_drill":"Start again",
+"drill_done":"Practice complete","drill_score":"Safe choices",
+"drill_summary":"Golden rule: hang up, tell someone you trust, and call 1930 if money or financial details are at risk.",
+"privacy_short":"Privacy and limitations"})
+T["hi"].update({
+"tab_drill":"🎭 स्कैम अभ्यास","text_size":"अक्षरों का आकार","size_options":["सामान्य","बड़ा","बहुत बड़ा"],
+"privacy_title":"हम आपकी निजता कैसे सुरक्षित रखते हैं","privacy_body":"इस प्रोटोटाइप में मैसेज खुले सेशन के दौरान इस्तेमाल होता है और डेटाबेस में सेव नहीं किया जाता। अगर AI जांच चालू है, तो मैसेज का टेक्स्ट Anthropic (Claude) को भेजा जाता है। पासवर्ड, OTP या गैर-ज़रूरी निजी जानकारी न डालें।",
+"limits_title":"इस टूल की सीमाएँ","limits_body":"यह प्रोटोटाइप जाने-पहचाने पैटर्न देखता है। कोई स्कैम छूट सकता है या सही मैसेज पर चेतावनी आ सकती है। स्कोर का मतलब स्कैम होने की संभावना नहीं है। शक हो तो कॉल काटें और 1930 पर कॉल करें।",
+"share_title":"यह चेतावनी दूसरों को भेजें","share_btn":"व्हाट्सऐप पर चेतावनी भेजें","share_note":"व्हाट्सऐप में तैयार संदेश खुलेगा। भेजने से पहले परिवार का सही ग्रुप चुनें।",
+"drill_title":"अभ्यास करें: स्कैम पहचानें","drill_intro":"संदिग्ध कॉल आने पर क्या करना है, इसका अभ्यास करें। AI key की ज़रूरत नहीं है।",
+"scenario_label":"अभ्यास चुनें","scenario_options":["नकली CBI अधिकारी","नकली पार्सल / SIM बंद होने की कॉल"],
+"step_label":"अभ्यास का चरण","choice_label":"आप क्या करेंगे?","next_step":"अगला चरण","restart_drill":"फिर से अभ्यास करें",
+"drill_done":"अभ्यास पूरा हुआ","drill_score":"सुरक्षित फैसले",
+"drill_summary":"याद रखें: कॉल काटें, भरोसेमंद व्यक्ति को बताएं, और पैसे या बैंक की जानकारी का खतरा हो तो 1930 पर कॉल करें।",
+"privacy_short":"निजता और सीमाएँ"})
+
  
  
 # ----------------------------------------------------------------------------
@@ -741,6 +799,8 @@ THEME_CSS = """
 .ss svg{flex:none}
 @keyframes ss-rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){.ss,.ss *,.stApp *{animation:none!important;transition:none!important}}
+.stButton>button,[data-testid="stDownloadButton"] button,[data-testid="stLinkButton"] a{min-height:44px!important}
+button:focus-visible,input:focus-visible,textarea:focus-visible,a:focus-visible,[role="radio"]:focus-visible{outline:3px solid #5EEAD4!important;outline-offset:3px!important}
  
 /* ---------- brand + hero ---------- */
 .ss-topbar{display:flex;align-items:center;gap:12px;padding:6px 0}
@@ -834,6 +894,9 @@ THEME_CSS = """
  
 /* ---------- Streamlit widgets (scoped to what this app uses) ---------- */
 [data-testid="stRadio"]{display:flex;justify-content:flex-end}
+[data-testid="stSelectbox"] label{color:var(--ss-text-2)!important;font-weight:600!important}
+[data-testid="stSelectbox"] [data-baseweb="select"]>div{min-height:44px!important;background:var(--ss-card)!important;border:1px solid var(--ss-line)!important;color:var(--ss-text)!important}
+[data-testid="stSelectbox"] [data-baseweb="select"] *{color:var(--ss-text)!important}
 [data-testid="stRadio"] [role="radiogroup"]{background:var(--ss-card);border:1px solid var(--ss-line);border-radius:12px;padding:4px;gap:4px!important;display:inline-flex!important;flex-direction:row!important;width:fit-content}
 [data-testid="stRadio"] label[data-baseweb="radio"]{margin:0!important;padding:6px 15px!important;border-radius:9px;cursor:pointer;color:var(--ss-text-2);transition:background .15s,color .15s}
 [data-testid="stRadio"] label[data-baseweb="radio"] > div:first-of-type:not(:has(p)){display:none!important}
@@ -1118,6 +1181,206 @@ def show_result(text: str, lang: str):
                 )
  
  
+
+DRILL_SCENARIOS = {
+"en": [
+{"title":"Fake CBI officer","steps":[
+("Caller: “I am from the CBI. Your Aadhaar is linked to a crime. Stay on video or you will be arrested.”",[
+("Hang up and call a trusted person using a number you know",True,"Correct. Real officials do not conduct arrests over video calls. Pause and verify independently."),
+("Stay on the call and obey",False,"Fear and pressure are used to control your choices. You can end the call."),
+("Send money to prove you are innocent",False,"Never transfer money to a so-called safe or verification account.")]),
+("Caller: “This is confidential. Do not tell your family, and keep your camera on.”",[
+("Tell family and verify through an official channel",True,"Correct. Secrecy and isolation are major warning signs."),
+("Keep it secret because they said it is an investigation",False,"Scammers often stop people from seeking help. Contact someone you trust."),
+("Share your OTP to finish verification",False,"Never share OTPs, PINs or passwords with a caller.")]),
+("Caller: “Transfer the money in 10 minutes or police will come.”",[
+("Do not pay. Hang up and call 1930 for guidance",True,"Correct. Urgent payment threats are a red flag. Call 1930 if you may be targeted."),
+("Pay now so the case goes away",False,"Paying does not prove innocence and may lead to more demands."),
+("Send bank details so they can check your account",False,"Do not share banking information with the caller.")])]},
+{"title":"Fake parcel / SIM-block call","steps":[
+("Caller: “Your parcel contains illegal items. Your SIM will be blocked. Press 1 and speak to an officer.”",[
+("End the call and verify with the courier or mobile provider using official contact details",True,"Correct. Verify independently; do not rely on numbers or links given by the caller."),
+("Give your Aadhaar and address to the caller",False,"Do not hand over personal details to an unverified caller."),
+("Move to WhatsApp video because they ask",False,"A video call does not make the caller genuine.")]),
+("Caller: “A police case is open. Do not disconnect or tell anyone.”",[
+("Hang up and tell someone you trust",True,"Correct. Threats and secrecy are warning signs. You are allowed to end the call."),
+("Stay silent and follow every instruction",False,"Pressure is not proof. Stop and verify independently."),
+("Send an OTP to cancel the case",False,"An OTP can give someone access to an account. Never share it.")]),
+("Caller: “Pay a refundable verification fee now.”",[
+("Do not pay. Contact the real provider and call 1930 if needed",True,"Correct. Do not pay a caller to settle an alleged case or unblock a SIM."),
+("Pay because they promised a refund",False,"Promises of refunds can be used to trick people into sending money."),
+("Continue on the caller's WhatsApp number",False,"Do not continue on a contact channel supplied by the suspicious caller.")])]}],
+"hi":[
+{"title":"नकली CBI अधिकारी","steps":[
+("कॉल करने वाला: “मैं CBI से बोल रहा हूँ। आपका आधार अपराध से जुड़ा है। वीडियो कॉल पर रहें, वरना गिरफ्तार कर लिए जाएंगे।”",[
+("कॉल काटें और अपने भरोसेमंद व्यक्ति को खुद कॉल करें",True,"सही। असली अधिकारी वीडियो कॉल पर किसी को गिरफ्तार नहीं करते। रुकें और खुद जांच करें।"),
+("कॉल पर रहें और उसकी बात मानें",False,"डराकर ठग आपको काबू में रखना चाहता है। आप कॉल काट सकते हैं।"),
+("बेगुनाही साबित करने के लिए पैसे भेजें",False,"किसी ‘सेफ’ या जांच वाले खाते में पैसे न भेजें।")]),
+("कॉल करने वाला: “यह गुप्त जांच है। परिवार को मत बताना और कैमरा चालू रखना।”",[
+("परिवार को बताएं और आधिकारिक तरीके से जांच करें",True,"सही। चुप रहने और अकेले रहने का दबाव खतरे का संकेत है।"),
+("जांच गुप्त है, इसलिए किसी को न बताएं",False,"ठग अक्सर मदद लेने से रोकते हैं। किसी भरोसेमंद व्यक्ति से बात करें।"),
+("जांच पूरी करने के लिए OTP बता दें",False,"किसी कॉल करने वाले को OTP, PIN या पासवर्ड न बताएं।")]),
+("कॉल करने वाला: “10 मिनट में पैसे भेजो, वरना पुलिस आ जाएगी।”",[
+("पैसे न भेजें, कॉल काटें और सलाह के लिए 1930 पर कॉल करें",True,"सही। जल्दी पैसे देने की धमकी खतरे का संकेत है। शक हो तो 1930 पर कॉल करें।"),
+("मामला खत्म करने के लिए तुरंत पैसे दें",False,"पैसे देने से बेगुनाही साबित नहीं होती; ठग और पैसे मांग सकता है।"),
+("बैंक की जानकारी भेज दें",False,"कॉल करने वाले को बैंक की जानकारी न दें।")])]},
+{"title":"नकली पार्सल / SIM बंद होने की कॉल","steps":[
+("कॉल करने वाला: “आपके पार्सल में गैर-कानूनी सामान है। आपकी SIM बंद होगी। अधिकारी से बात करने के लिए 1 दबाएं।”",[
+("कॉल काटें और कंपनी के आधिकारिक नंबर से खुद जांच करें",True,"सही। कॉल करने वाले के दिए नंबर या लिंक पर भरोसा न करें; खुद आधिकारिक संपर्क ढूंढें।"),
+("कॉल करने वाले को आधार और पता बता दें",False,"बिना जांचे कॉल करने वाले को निजी जानकारी न दें।"),
+("उसके कहने पर WhatsApp वीडियो कॉल पर जाएं",False,"वीडियो कॉल होने से कोई व्यक्ति असली अधिकारी नहीं बन जाता।")]),
+("कॉल करने वाला: “पुलिस केस है। कॉल मत काटना और किसी को मत बताना।”",[
+("कॉल काटें और किसी भरोसेमंद व्यक्ति को बताएं",True,"सही। धमकी और चुप रहने का दबाव खतरे के संकेत हैं। आप कॉल काट सकते हैं।"),
+("चुप रहें और उसकी हर बात मानें",False,"दबाव डालना सबूत नहीं है। रुकें और खुद जांच करें।"),
+("केस रद्द करने के लिए OTP बता दें",False,"OTP से किसी को आपके खाते तक पहुंच मिल सकती है। इसे किसी को न बताएं।")]),
+("कॉल करने वाला: “अभी पैसे दो, बाद में वापस मिल जाएंगे।”",[
+("पैसे न दें। कंपनी से खुद संपर्क करें; ज़रूरत हो तो 1930 पर कॉल करें",True,"सही। केस खत्म करने या SIM चालू करने के नाम पर कॉल करने वाले को पैसे न दें।"),
+("वापस मिलने के वादे पर पैसे दे दें",False,"पैसे लौटाने का वादा भी ठगी का तरीका हो सकता है।"),
+("उसका WhatsApp नंबर लेकर बात जारी रखें",False,"संदिग्ध कॉल करने वाले के दिए संपर्क पर बातचीत जारी न रखें।")])]}]}
+
+def show_scam_drill(lang: str, t: dict):
+    st.markdown(f'<div class="ss"><h2 class="ss-section-title">{html.escape(t["drill_title"])}</h2><p class="ss-sub">{html.escape(t["drill_intro"])}</p></div>', unsafe_allow_html=True)
+    scenario_idx = st.selectbox(t["scenario_label"], [0, 1], format_func=lambda i: t["scenario_options"][i], key="drill_scenario")
+    scenario = DRILL_SCENARIOS[lang][scenario_idx]
+    state_key = f"drill_state_{lang}_{scenario_idx}"
+    state = st.session_state.setdefault(state_key, {"step": 0, "history": [], "answered": False, "feedback": None})
+    if state["step"] >= len(scenario["steps"]):
+        st.success(t["drill_done"])
+        good = sum(state["history"])
+        st.metric(t["drill_score"], f'{good} / {len(scenario["steps"])}')
+        if good:
+            st.success("You made at least one safe choice. Keep pausing and checking before acting." if lang == "en" else "आपने कम-से-कम एक सुरक्षित फैसला लिया। कोई कदम उठाने से पहले रुककर जांचते रहें।")
+        st.markdown("**Red flags in this scenario**" if lang == "en" else "**इस अभ्यास में खतरे के संकेत**")
+        for caller_line, _ in scenario["steps"]:
+            st.markdown("- " + caller_line)
+        st.info(t["drill_summary"])
+        if st.button(t["restart_drill"], key=f"drill_restart_{lang}_{scenario_idx}"):
+            st.session_state[state_key] = {"step": 0, "history": [], "answered": False, "feedback": None}
+            st.rerun()
+        return
+    caller, options = scenario["steps"][state["step"]]
+    st.progress(state["step"] / len(scenario["steps"]))
+    st.caption(f'{t["step_label"]} {state["step"] + 1} / {len(scenario["steps"])}')
+    st.warning(caller)
+    st.markdown(f'**{t["choice_label"]}**')
+    for oi, (label, is_safe, feedback) in enumerate(options):
+        if not state["answered"]:
+            if st.button(label, key=f"drill_{lang}_{scenario_idx}_{state['step']}_{oi}", use_container_width=True):
+                state["answered"] = True
+                state["feedback"] = (is_safe, feedback)
+                state["history"].append(1 if is_safe else 0)
+                st.rerun()
+        else:
+            st.button(label, key=f"drill_disabled_{lang}_{scenario_idx}_{state['step']}_{oi}", disabled=True, use_container_width=True)
+    if state["answered"]:
+        safe, feedback = state["feedback"]
+        (st.success if safe else st.error)(feedback)
+        if st.button(t["next_step"], key=f"drill_next_{lang}_{scenario_idx}_{state['step']}"):
+            state["step"] += 1
+            state["answered"] = False
+            state["feedback"] = None
+            st.rerun()
+
+
+DRILL_SCENARIOS = {
+"en": [
+{"title":"Fake CBI officer","steps":[
+("Caller: “I am from the CBI. Your Aadhaar is linked to a crime. Stay on video or you will be arrested.”",[
+("Hang up and call a trusted person using a number you know",True,"Correct. Real officials do not conduct arrests over video calls. Pause and verify independently."),
+("Stay on the call and obey",False,"Fear and pressure are used to control your choices. You can end the call."),
+("Send money to prove you are innocent",False,"Never transfer money to a so-called safe or verification account.")]),
+("Caller: “This is confidential. Do not tell your family, and keep your camera on.”",[
+("Tell family and verify through an official channel",True,"Correct. Secrecy and isolation are major warning signs."),
+("Keep it secret because they said it is an investigation",False,"Scammers often stop people from seeking help. Contact someone you trust."),
+("Share your OTP to finish verification",False,"Never share OTPs, PINs or passwords with a caller.")]),
+("Caller: “Transfer the money in 10 minutes or police will come.”",[
+("Do not pay. Hang up and call 1930 for guidance",True,"Correct. Urgent payment threats are a red flag. Call 1930 if you may be targeted."),
+("Pay now so the case goes away",False,"Paying does not prove innocence and may lead to more demands."),
+("Send bank details so they can check your account",False,"Do not share banking information with the caller.")])]},
+{"title":"Fake parcel / SIM-block call","steps":[
+("Caller: “Your parcel contains illegal items. Your SIM will be blocked. Press 1 and speak to an officer.”",[
+("End the call and verify with the courier or mobile provider using official contact details",True,"Correct. Verify independently; do not rely on numbers or links given by the caller."),
+("Give your Aadhaar and address to the caller",False,"Do not hand over personal details to an unverified caller."),
+("Move to WhatsApp video because they ask",False,"A video call does not make the caller genuine.")]),
+("Caller: “A police case is open. Do not disconnect or tell anyone.”",[
+("Hang up and tell someone you trust",True,"Correct. Threats and secrecy are warning signs. You are allowed to end the call."),
+("Stay silent and follow every instruction",False,"Pressure is not proof. Stop and verify independently."),
+("Send an OTP to cancel the case",False,"An OTP can give someone access to an account. Never share it.")]),
+("Caller: “Pay a refundable verification fee now.”",[
+("Do not pay. Contact the real provider and call 1930 if needed",True,"Correct. Do not pay a caller to settle an alleged case or unblock a SIM."),
+("Pay because they promised a refund",False,"Promises of refunds can be used to trick people into sending money."),
+("Continue on the caller's WhatsApp number",False,"Do not continue on a contact channel supplied by the suspicious caller.")])]}],
+"hi":[
+{"title":"नकली CBI अधिकारी","steps":[
+("कॉल करने वाला: “मैं CBI से बोल रहा हूँ। आपका आधार अपराध से जुड़ा है। वीडियो कॉल पर रहें, वरना गिरफ्तार कर लिए जाएंगे।”",[
+("कॉल काटें और अपने भरोसेमंद व्यक्ति को खुद कॉल करें",True,"सही। असली अधिकारी वीडियो कॉल पर किसी को गिरफ्तार नहीं करते। रुकें और खुद जांच करें।"),
+("कॉल पर रहें और उसकी बात मानें",False,"डराकर ठग आपको काबू में रखना चाहता है। आप कॉल काट सकते हैं।"),
+("बेगुनाही साबित करने के लिए पैसे भेजें",False,"किसी ‘सेफ’ या जांच वाले खाते में पैसे न भेजें।")]),
+("कॉल करने वाला: “यह गुप्त जांच है। परिवार को मत बताना और कैमरा चालू रखना।”",[
+("परिवार को बताएं और आधिकारिक तरीके से जांच करें",True,"सही। चुप रहने और अकेले रहने का दबाव खतरे का संकेत है।"),
+("जांच गुप्त है, इसलिए किसी को न बताएं",False,"ठग अक्सर मदद लेने से रोकते हैं। किसी भरोसेमंद व्यक्ति से बात करें।"),
+("जांच पूरी करने के लिए OTP बता दें",False,"किसी कॉल करने वाले को OTP, PIN या पासवर्ड न बताएं।")]),
+("कॉल करने वाला: “10 मिनट में पैसे भेजो, वरना पुलिस आ जाएगी।”",[
+("पैसे न भेजें, कॉल काटें और सलाह के लिए 1930 पर कॉल करें",True,"सही। जल्दी पैसे देने की धमकी खतरे का संकेत है। शक हो तो 1930 पर कॉल करें।"),
+("मामला खत्म करने के लिए तुरंत पैसे दें",False,"पैसे देने से बेगुनाही साबित नहीं होती; ठग और पैसे मांग सकता है।"),
+("बैंक की जानकारी भेज दें",False,"कॉल करने वाले को बैंक की जानकारी न दें।")])]},
+{"title":"नकली पार्सल / SIM बंद होने की कॉल","steps":[
+("कॉल करने वाला: “आपके पार्सल में गैर-कानूनी सामान है। आपकी SIM बंद होगी। अधिकारी से बात करने के लिए 1 दबाएं।”",[
+("कॉल काटें और कंपनी के आधिकारिक नंबर से खुद जांच करें",True,"सही। कॉल करने वाले के दिए नंबर या लिंक पर भरोसा न करें; खुद आधिकारिक संपर्क ढूंढें।"),
+("कॉल करने वाले को आधार और पता बता दें",False,"बिना जांचे कॉल करने वाले को निजी जानकारी न दें।"),
+("उसके कहने पर WhatsApp वीडियो कॉल पर जाएं",False,"वीडियो कॉल होने से कोई व्यक्ति असली अधिकारी नहीं बन जाता।")]),
+("कॉल करने वाला: “पुलिस केस है। कॉल मत काटना और किसी को मत बताना।”",[
+("कॉल काटें और किसी भरोसेमंद व्यक्ति को बताएं",True,"सही। धमकी और चुप रहने का दबाव खतरे के संकेत हैं। आप कॉल काट सकते हैं।"),
+("चुप रहें और उसकी हर बात मानें",False,"दबाव डालना सबूत नहीं है। रुकें और खुद जांच करें।"),
+("केस रद्द करने के लिए OTP बता दें",False,"OTP से किसी को आपके खाते तक पहुंच मिल सकती है। इसे किसी को न बताएं।")]),
+("कॉल करने वाला: “अभी पैसे दो, बाद में वापस मिल जाएंगे।”",[
+("पैसे न दें। कंपनी से खुद संपर्क करें; ज़रूरत हो तो 1930 पर कॉल करें",True,"सही। केस खत्म करने या SIM चालू करने के नाम पर कॉल करने वाले को पैसे न दें।"),
+("वापस मिलने के वादे पर पैसे दे दें",False,"पैसे लौटाने का वादा भी ठगी का तरीका हो सकता है।"),
+("उसका WhatsApp नंबर लेकर बात जारी रखें",False,"संदिग्ध कॉल करने वाले के दिए संपर्क पर बातचीत जारी न रखें।")])]}]}
+
+def show_scam_drill(lang: str, t: dict):
+    st.markdown(f'<div class="ss"><h2 class="ss-section-title">{html.escape(t["drill_title"])}</h2><p class="ss-sub">{html.escape(t["drill_intro"])}</p></div>', unsafe_allow_html=True)
+    scenario_idx = st.selectbox(t["scenario_label"], [0, 1], format_func=lambda i: t["scenario_options"][i], key="drill_scenario")
+    scenario = DRILL_SCENARIOS[lang][scenario_idx]
+    state_key = f"drill_state_{lang}_{scenario_idx}"
+    state = st.session_state.setdefault(state_key, {"step": 0, "history": [], "answered": False, "feedback": None})
+    if state["step"] >= len(scenario["steps"]):
+        st.success(t["drill_done"])
+        good = sum(state["history"])
+        st.metric(t["drill_score"], f'{good} / {len(scenario["steps"])}')
+        if good:
+            st.success("You made at least one safe choice. Keep pausing and checking before acting." if lang == "en" else "आपने कम-से-कम एक सुरक्षित फैसला लिया। कोई कदम उठाने से पहले रुककर जांचते रहें।")
+        st.markdown("**Red flags in this scenario**" if lang == "en" else "**इस अभ्यास में खतरे के संकेत**")
+        for caller_line, _ in scenario["steps"]:
+            st.markdown("- " + caller_line)
+        st.info(t["drill_summary"])
+        if st.button(t["restart_drill"], key=f"drill_restart_{lang}_{scenario_idx}"):
+            st.session_state[state_key] = {"step": 0, "history": [], "answered": False, "feedback": None}
+            st.rerun()
+        return
+    caller, options = scenario["steps"][state["step"]]
+    st.progress(state["step"] / len(scenario["steps"]))
+    st.caption(f'{t["step_label"]} {state["step"] + 1} / {len(scenario["steps"])}')
+    st.warning(caller)
+    st.markdown(f'**{t["choice_label"]}**')
+    for oi, (label, is_safe, feedback) in enumerate(options):
+        if not state["answered"]:
+            if st.button(label, key=f"drill_{lang}_{scenario_idx}_{state['step']}_{oi}", use_container_width=True):
+                state["answered"] = True
+                state["feedback"] = (is_safe, feedback)
+                state["history"].append(1 if is_safe else 0)
+                st.rerun()
+        else:
+            st.button(label, key=f"drill_disabled_{lang}_{scenario_idx}_{state['step']}_{oi}", disabled=True, use_container_width=True)
+    if state["answered"]:
+        safe, feedback = state["feedback"]
+        (st.success if safe else st.error)(feedback)
+        if st.button(t["next_step"], key=f"drill_next_{lang}_{scenario_idx}_{state['step']}"):
+            state["step"] += 1
+            state["answered"] = False
+            state["feedback"] = None
+            st.rerun()
+
 def show_learn(t: dict):
     cards = ""
     for i, (title, desc) in enumerate(t["learn"], 1):
@@ -1186,24 +1449,27 @@ def show_self_test(lang: str):
 # ----------------------------------------------------------------------------
 st.set_page_config(page_title="Suraksha Saathi", page_icon="🛡️", layout="wide")
  
-# Language comes from the selector's saved state (Hindi first, as before)
-lang = "hi" if st.session_state.get("lang_choice", "हिन्दी") == "हिन्दी" else "en"
+# Use visible select boxes for reliable desktop and mobile interaction.
+lang_choice = st.selectbox(
+    "Language / भाषा", ["हिन्दी", "English"], key="lang_choice", label_visibility="visible"
+)
+lang = "hi" if lang_choice == "हिन्दी" else "en"
 t = T[lang]
- 
+
 st.markdown(THEME_CSS + (HINDI_CSS if lang == "hi" else ""), unsafe_allow_html=True)
- 
-head_left, head_right = st.columns([3, 2])
+
+head_left, head_right = st.columns([2, 2])
 with head_left:
     render_topbar(t)
 with head_right:
-    st.radio(
-        "Language / भाषा",
-        ["हिन्दी", "English"],
-        horizontal=True,
-        key="lang_choice",
-        label_visibility="collapsed",
+    size_labels = dict(zip(["normal", "large", "xlarge"], t["size_options"]))
+    st.selectbox(
+        t["text_size"], ["normal", "large", "xlarge"],
+        format_func=lambda option: size_labels[option], key="text_size_choice", label_visibility="visible"
     )
- 
+size_choice = st.session_state.get("text_size_choice", "normal")
+size_scale = {"normal": 1.0, "large": 1.15, "xlarge": 1.30}.get(size_choice, 1.0)
+st.markdown(f"<style>:root{{--ss-text-scale:{size_scale}}} html{{font-size:calc(16px * var(--ss-text-scale, 1))!important}} .stApp p,.stApp label,.stApp li,.stApp button,.stApp textarea,.stApp input,.stApp a,.stApp summary,.stApp h1,.stApp h2,.stApp h3{{font-size:calc(1em * var(--ss-text-scale, 1))!important}} .stButton>button,[data-testid='stDownloadButton'] button{{min-height:44px!important}} button:focus-visible,input:focus-visible,textarea:focus-visible,a:focus-visible{{outline:3px solid #5EEAD4!important;outline-offset:3px!important}} @media(max-width:640px){{[data-testid='stMainBlockContainer'],.block-container{{padding:.8rem .75rem 2rem!important}}}}</style>", unsafe_allow_html=True)
 render_hero(t)
  
 if "text" not in st.session_state:
@@ -1211,7 +1477,7 @@ if "text" not in st.session_state:
 if "checked" not in st.session_state:
     st.session_state.checked = None
  
-tab_check, tab_learn, tab_test = st.tabs([t["tab_check"], t["tab_learn"], t["tab_test"]])
+tab_check, tab_learn, tab_test, tab_drill = st.tabs([t["tab_check"], t["tab_learn"], t["tab_test"], t["tab_drill"]])
  
 with tab_check:
     with card_container("input_card"):
@@ -1254,6 +1520,18 @@ with tab_check:
         st.markdown(f'<div class="ss ss-label" style="margin-top:22px">{html.escape(t["how_title"]).upper()}</div>', unsafe_allow_html=True)
         render_how(t)
  
+    st.markdown(f'<div class="ss"><h3 class="ss-section-title">{html.escape(t["share_title"])}</h3><p class="ss-sub">{html.escape(t["share_note"])}</p></div>', unsafe_allow_html=True)
+    if lang == "hi":
+        warning_msg = "डिजिटल अरेस्ट स्कैम के 5 संकेत: (1) गिरफ्तारी की धमकी (2) किसी को न बताने का दबाव (3) वीडियो कॉल न काटने को कहना (4) पैसे को ‘सेफ अकाउंट’ में भेजने को कहना (5) तुरंत फैसला करने का दबाव। पुलिस/CBI वीडियो कॉल पर गिरफ्तार नहीं करती और पैसे नहीं मांगती। शक हो तो कॉल काटें और साइबर क्राइम हेल्पलाइन 1930 पर कॉल करें।"
+    else:
+        warning_msg = "5 signs of a digital arrest scam: (1) Threats of arrest (2) Pressure to keep it secret (3) Demands to stay on a video call (4) Requests to move money to a “safe account” (5) Pressure to act immediately. Police/CBI do not arrest people over video calls or ask for money. If unsure, hang up and call cybercrime helpline 1930."
+    st.link_button(t["share_btn"], "https://wa.me/?text=" + urllib.parse.quote(warning_msg), use_container_width=True)
+    with st.expander(t["privacy_short"]):
+        st.markdown(f'**{t["privacy_title"]}**\n\n{t["privacy_body"]}\n\n**{t["limits_title"]}**\n\n{t["limits_body"]}')
+
+with tab_drill:
+    show_scam_drill(lang, t)
+
 with tab_learn:
     show_learn(t)
  
