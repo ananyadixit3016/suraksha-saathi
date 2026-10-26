@@ -1646,11 +1646,11 @@ button[data-baseweb="tab"][aria-selected="true"]{background:transparent!importan
 .ss-hero-art img{object-position:center 43%!important;mask-image:linear-gradient(90deg,transparent 0%,rgba(0,0,0,.24) 10%,#000 27%)!important;-webkit-mask-image:linear-gradient(90deg,transparent 0%,rgba(0,0,0,.24) 10%,#000 27%)!important}
 .ss-hero h1{font-family:Georgia,'Times New Roman',serif!important;font-size:clamp(2.8rem,5vw,4.35rem)!important;line-height:.99!important;letter-spacing:-.035em!important;margin:16px 0!important}
 .ss-hero p{font-size:1.08rem!important;line-height:1.52!important;max-width:490px!important}.ss-trust{gap:10px!important;margin-top:20px!important}.ss-trust span{padding:10px 14px!important;font-size:.92rem!important}
-.ss-home-quick{height:100%!important;min-height:260px!important;padding:21px 20px!important}.ss-home-quick ul{grid-template-columns:1fr!important;gap:13px!important}
-.ss-feature-grid{gap:16px!important;margin:16px 0!important}.ss-feature{min-height:180px!important;padding:18px!important}.ss-helpline{min-height:96px!important}
+.ss-home-quick{height:auto!important;min-height:0!important;padding:18px 18px!important}.ss-home-quick ul{grid-template-columns:1fr!important;gap:11px!important}
+.ss-feature-grid{gap:12px!important;margin:16px 0 18px!important}.ss-feature{min-height:150px!important;padding:15px!important}.ss-feature-icon{width:42px!important;height:42px!important;margin-bottom:9px!important}.ss-feature p{line-height:1.48!important}.ss-helpline{min-height:88px!important;padding:15px 20px!important}.ss-how{margin-top:10px!important}.ss-how-item{min-height:92px!important;padding:14px 16px!important}
 @media(max-width:1100px){.ss-hero-showcase{min-height:430px!important}.ss-hero-copy{width:58%!important}.ss-hero-art{width:75%!important;opacity:.86}}
 @media(max-width:820px){[data-testid="stMainBlockContainer"],.block-container{padding:0 1rem 2rem!important}.ss-hero-showcase{min-height:560px!important;align-items:flex-start!important;padding:24px 20px 240px!important}.ss-hero-copy{width:100%!important;max-width:590px!important}.ss-hero-art{width:100%!important;height:270px!important;top:auto!important;bottom:0!important;opacity:.92!important}.ss-hero-art img{object-fit:contain!important;object-position:center bottom!important;mask-image:linear-gradient(180deg,transparent 0%,#000 24%)!important;-webkit-mask-image:linear-gradient(180deg,transparent 0%,#000 24%)!important}.ss-hero h1{font-size:clamp(2.4rem,8vw,3.5rem)!important}.ss-feature-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
-@media(max-width:560px){.ss-hero-showcase{min-height:590px!important}.ss-feature-grid{grid-template-columns:1fr 1fr!important}.ss-feature{padding:12px!important}.ss-helpline{align-items:flex-start!important}.ss-helpline-number{padding:9px 16px!important}}
+@media(max-width:560px){.ss-hero-showcase{min-height:590px!important}.ss-feature-grid{grid-template-columns:1fr 1fr!important}.ss-feature{padding:12px!important;min-height:145px!important}.ss-home-quick{padding:15px!important}.ss-helpline{align-items:flex-start!important}.ss-helpline-number{padding:9px 16px!important}.ss-how{grid-template-columns:1fr!important}}
 </style>""".replace("__SCALE__", str(size_scale))
 if st.session_state.light_theme:
     refinement_css += """<style>
@@ -1670,7 +1670,7 @@ nav_labels = (["⌂  Home", "☷  Steps", "⬟  Self-Test", "▧  Scam Types"] i
 tab_check, tab_learn, tab_test, tab_drill = st.tabs(nav_labels)
  
 with tab_check:
-    check_col, tips_col = st.columns([2.15, 1], gap="medium")
+    check_col, tips_col = st.columns([1.85, 1], gap="medium")
     with check_col:
         with card_container("input_card"):
             st.markdown(
@@ -1691,7 +1691,7 @@ with tab_check:
                 st.session_state.checked = None
 
             user_text = st.text_area(
-                t["input_label"], key="text", height=170,
+                t["input_label"], key="text", height=112,
                 placeholder=t["placeholder"], label_visibility="collapsed",
             )
             action_col, clear_col = st.columns([1, .7])
@@ -1713,18 +1713,6 @@ with tab_check:
         # Keep the last result visible through reruns, downloads and language changes.
         if st.session_state.checked:
             show_result(st.session_state.checked, lang)
-        else:
-            st.markdown(f'<div class="ss ss-label" style="margin-top:22px">{html.escape(t["how_title"]).upper()}</div>', unsafe_allow_html=True)
-            render_how(t)
-
-        st.markdown(f'<div class="ss"><h3 class="ss-section-title">{html.escape(t["share_title"])}</h3><p class="ss-sub">{html.escape(t["share_note"])}</p></div>', unsafe_allow_html=True)
-        if lang == "hi":
-            warning_msg = "डिजिटल अरेस्ट स्कैम के 5 संकेत: (1) गिरफ्तारी की धमकी (2) किसी को न बताने का दबाव (3) वीडियो कॉल न काटने को कहना (4) पैसे को ‘सेफ अकाउंट’ में भेजने को कहना (5) OTP या बैंक की जानकारी मांगना। शक हो तो पैसे न भेजें, कॉल काटें और 1930 पर संपर्क करें।"
-        else:
-            warning_msg = "5 signs of a digital arrest scam: (1) Threats of arrest (2) Pressure to keep it secret (3) Demands to stay on a video call (4) Requests to move money to a ‘safe account’ (5) Requests for OTPs or banking details. If in doubt, do not pay, hang up, and contact 1930."
-        st.link_button(t["share_btn"], "https://wa.me/?text=" + urllib.parse.quote(warning_msg), use_container_width=True)
-        with st.expander(t["privacy_short"]):
-            st.markdown(f'**{t["privacy_title"]}**\n\n{t["privacy_body"]}\n\n**{t["limits_title"]}**\n\n{t["limits_body"]}')
 
     with tips_col:
         tips_title = "Quick Tips" if lang == "en" else "ज़रूरी सुरक्षा सुझाव"
@@ -1732,6 +1720,18 @@ with tab_check:
         quick_html = ''.join(f'<li><span class="ss-tip-check">✓</span><span>{html.escape(item)}</span></li>' for item in tips)
         st.markdown(f'<div class="ss-home-quick"><div class="ss-home-quick-head"><span class="ss-home-quick-icon">✦</span><h3>{tips_title}</h3></div><ul>{quick_html}</ul></div>', unsafe_allow_html=True)
         st.markdown('<div class="ss-side-note"><span class="ss-side-note-icon">🛡</span><div><b>' + ("Remember" if lang == "en" else "याद रखें") + '</b><p>' + ("Real officials will never demand money to prevent an arrest. Pause, hang up, and verify." if lang == "en" else "असली अधिकारी गिरफ्तारी रोकने के लिए पैसे नहीं मांगते। रुकें, कॉल काटें और खुद पुष्टि करें।") + '</p></div></div>', unsafe_allow_html=True)
+
+    # These sections intentionally span the full page width beneath the checker/tips row.
+    st.markdown(f'<div class="ss ss-label" style="margin-top:22px">{html.escape(t["how_title"]).upper()}</div>', unsafe_allow_html=True)
+    render_how(t)
+    st.markdown(f'<div class="ss" style="margin-top:22px"><h3 class="ss-section-title">{html.escape(t["share_title"])}</h3><p class="ss-sub">{html.escape(t["share_note"])}</p></div>', unsafe_allow_html=True)
+    if lang == "hi":
+        warning_msg = "डिजिटल अरेस्ट स्कैम के 5 संकेत: (1) गिरफ्तारी की धमकी (2) किसी को न बताने का दबाव (3) वीडियो कॉल न काटने को कहना (4) पैसे को ‘सेफ अकाउंट’ में भेजने को कहना (5) OTP या बैंक की जानकारी मांगना। शक हो तो पैसे न भेजें, कॉल काटें और 1930 पर संपर्क करें।"
+    else:
+        warning_msg = "5 signs of a digital arrest scam: (1) Threats of arrest (2) Pressure to keep it secret (3) Demands to stay on a video call (4) Requests to move money to a ‘safe account’ (5) Requests for OTPs or banking details. If in doubt, do not pay, hang up, and contact 1930."
+    st.link_button(t["share_btn"], "https://wa.me/?text=" + urllib.parse.quote(warning_msg), use_container_width=True)
+    with st.expander(t["privacy_short"]):
+        st.markdown(f'**{t["privacy_title"]}**\n\n{t["privacy_body"]}\n\n**{t["limits_title"]}**\n\n{t["limits_body"]}')
 
     feature_labels = [
         ("🧠", "Scam Drill" if lang == "en" else "स्कैम अभ्यास", "Test your knowledge with real-life scam scenarios." if lang == "en" else "असली जैसे उदाहरणों से अपनी जानकारी जाँचें।", "#ff5b83", "rgba(255,77,123,.12)"),
