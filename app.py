@@ -1022,7 +1022,6 @@ button[data-baseweb="tab"][aria-selected="true"]{background:#E4F5F1!important;co
 </style>
 """
 
-HINDI_CSS
 HINDI_CSS = """
 <style>
 .stApp p,.ss,.ss p,.ss li,.ss div,.stApp textarea{line-height:1.75}
